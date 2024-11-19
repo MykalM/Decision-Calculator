@@ -1,0 +1,369 @@
+import React, { useState } from 'react';
+import { Lock, Unlock, RotateCcw } from 'lucide-react';
+
+const BFPNBMCalculator = () => {
+  const initialTasks = [
+    { id: 1, description: 'Creation of the prototype to demo for client', hours: 6 },
+    { id: 2, description: 'Updates per first round', hours: 1.5 },
+    { id: 3, description: 'Update on website version 2', hours: 1.5 },
+    { id: 4, description: 'Setup server to host https://bfpnbm.com/', hours: 3 },
+    { id: 5, description: 'Programming https://bfpnbm.com/', hours: 10 },
+    { id: 6, description: 'Server setup and hosting fees', hours: 0, fixedPrice: 136.37 }
+  ];
+
+  const [tasks, setTasks] = useState(initialTasks);
+  const [selectedTier, setSelectedTier] = useState('');
+  const [selectedComplexity, setSelectedComplexity] = useState('');
+  const [isLocked, setIsLocked] = useState(true);
+  const [newTask, setNewTask] = useState({ description: '', hours: '' });
+
+  const tierLevels = [
+    { 
+      id: 'mid', 
+      label: 'Mid-Level Designer', 
+      description: '2-5 years experience',
+      capabilities: [
+        'Full understanding of design principles and tools',
+        'Can handle standard projects independently',
+        'Effective communication with clients',
+        'Strong problem-solving abilities',
+        'Experience with responsive design'
+      ],
+      expectations: 'Mid-level designers take ownership of projects from concept to completion. They bring technical proficiency and practical experience to deliver high-quality solutions efficiently.'
+    },
+    { 
+      id: 'senior', 
+      label: 'Senior Designer', 
+      description: '5-8 years experience',
+      capabilities: [
+        'Advanced mastery of design systems',
+        'Project leadership and team mentoring',
+        'Complex problem-solving expertise',
+        'Strategic thinking and planning',
+        'Deep understanding of user behavior'
+      ],
+      expectations: 'Senior designers lead complex projects and guide strategic decisions. They bring extensive experience in managing challenging projects and ensuring optimal results.'
+    },
+    { 
+      id: 'expert', 
+      label: 'Expert/Consultant', 
+      description: '8+ years experience',
+      capabilities: [
+        'Industry thought leadership',
+        'Strategic consultation and direction',
+        'Innovation and cutting-edge solutions',
+        'Complex system architecture',
+        'High-level project oversight'
+      ],
+      expectations: 'Expert consultants provide high-level strategic guidance and innovative solutions. They bring industry-leading expertise and proven success in delivering exceptional results.'
+    }
+  ];
+
+  const complexityLevels = [
+    { 
+      id: 'simple', 
+      label: 'Simple Project', 
+      description: 'Basic design tasks with clear requirements',
+      examples: 'Minor updates, basic layouts, simple features',
+      insights: 'Suitable for straightforward projects with well-defined scope. Typically involves standard implementations and minimal complexity.'
+    },
+    { 
+      id: 'moderate', 
+      label: 'Moderate Project', 
+      description: 'Medium complexity with some technical challenges',
+      examples: 'New features, integrations, responsive designs',
+      insights: 'Best for projects requiring deeper technical knowledge and careful planning. May involve multiple components or moderate technical challenges.'
+    },
+    { 
+      id: 'complex', 
+      label: 'Complex Project', 
+      description: 'High complexity requiring extensive expertise',
+      examples: 'System redesigns, complex applications, innovative solutions',
+      insights: 'Ideal for challenging projects requiring strategic thinking and extensive experience. Involves sophisticated solutions and careful coordination.'
+    }
+  ];
+
+  const ratesTable = {
+    'mid': { 'simple': 75, 'moderate': 100, 'complex': 125 },
+    'senior': { 'simple': 100, 'moderate': 125, 'complex': 150 },
+    'expert': { 'simple': 150, 'moderate': 175, 'complex': 200 }
+  };
+
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    if (newTask.description && newTask.hours) {
+      setTasks([...tasks, { ...newTask, id: tasks.length + 1, hours: parseFloat(newTask.hours) }]);
+      setNewTask({ description: '', hours: '' });
+    }
+  };
+
+  const handleUpdateTask = (id, field, value) => {
+    if (!isLocked) {
+      setTasks(tasks.map(task => 
+        task.id === id ? { ...task, [field]: field === 'hours' ? parseFloat(value) : value } : task
+      ));
+    }
+  };
+
+  const calculateTaxesAndFees = (subtotal = 0, fixedCosts = 0) => {
+    const txTaxRate = 0.0825;  // 8.25% TX sales tax
+    const ccFeePercentage = 0.029; // 2.9% credit card processing fee
+    const ccFeeFlat = 0.30; // $0.30 flat fee per transaction
+
+    const totalBeforeTax = subtotal + fixedCosts;
+    const txTax = totalBeforeTax * txTaxRate;
+    const ccFee = (totalBeforeTax * ccFeePercentage) + ccFeeFlat;
+    
+    return {
+      subtotal: parseFloat(subtotal) || 0,
+      fixedCosts: parseFloat(fixedCosts) || 0,
+      txTax: parseFloat(txTax) || 0,
+      ccFee: parseFloat(ccFee) || 0,
+      total: parseFloat(totalBeforeTax + txTax + ccFee) || 0
+    };
+  };
+
+  const totalHours = tasks.reduce((sum, task) => sum + (parseFloat(task.hours) || 0), 0);
+  const hourlyRate = selectedTier && selectedComplexity ? ratesTable[selectedTier][selectedComplexity] : 0;
+  const subtotal = totalHours * hourlyRate;
+  const fixedCosts = tasks.reduce((sum, task) => sum + (parseFloat(task.fixedPrice) || 0), 0);
+  const totals = calculateTaxesAndFees(subtotal, fixedCosts);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* Header with Title and Controls */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold">Ballet Folklorico Panameno</h1>
+          <div className="flex gap-2">
+            <button onClick={() => setIsLocked(!isLocked)} className="p-2 hover:bg-gray-100 rounded-lg">
+              {isLocked ? <Lock className="h-5 w-5" /> : <Unlock className="h-5 w-5" />}
+            </button>
+            <button onClick={() => { 
+              setTasks(initialTasks); 
+              setSelectedTier(''); 
+              setSelectedComplexity(''); 
+              setNewTask({ description: '', hours: '' });
+            }} 
+            className="p-2 hover:bg-gray-100 rounded-lg">
+              <RotateCcw className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Experience and Complexity Selection */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Experience Level</h2>
+            <div className="space-y-4">
+              {tierLevels.map((tier) => (
+                <div key={tier.id}
+                     onClick={() => setSelectedTier(tier.id)}
+                     className={`p-4 rounded-lg border-2 cursor-pointer
+                       ${selectedTier === tier.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-4 h-4 rounded-full border-2
+                      ${selectedTier === tier.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`} />
+                    <div>
+                      <h3 className="font-medium">{tier.label}</h3>
+                      <p className="text-sm text-gray-500">{tier.description}</p>
+                    </div>
+                  </div>
+                  <div className="ml-7 space-y-2">
+                    <ul className="text-sm text-gray-600 list-disc pl-4 space-y-1">
+                      {tier.capabilities.map((capability, index) => (
+                        <li key={index}>{capability}</li>
+                      ))}
+                    </ul>
+                    <p className="text-sm text-gray-600 mt-2">{tier.expectations}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">Project Complexity</h2>
+            <div className="space-y-4">
+              {complexityLevels.map((complexity) => (
+                <div key={complexity.id}
+                     onClick={() => setSelectedComplexity(complexity.id)}
+                     className={`p-4 rounded-lg border-2 cursor-pointer
+                       ${selectedComplexity === complexity.id ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`w-4 h-4 rounded-full border-2
+                      ${selectedComplexity === complexity.id ? 'border-green-500 bg-green-500' : 'border-gray-300'}`} />
+                    <div>
+                      <h3 className="font-medium">{complexity.label}</h3>
+                      <p className="text-sm text-gray-500">{complexity.description}</p>
+                    </div>
+                  </div>
+                  <div className="ml-7 space-y-2">
+                    <p className="text-sm text-gray-600">Examples: {complexity.examples}</p>
+                    <p className="text-sm text-gray-600">{complexity.insights}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Tasks */}
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
+          <h2 className="text-xl font-semibold mb-4">Tasks</h2>
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left">#</th>
+                <th className="px-4 py-2 text-left">Description</th>
+                <th className="px-4 py-2 text-right">Hours</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {tasks.map((task, index) => (
+                <tr key={task.id}>
+                  <td className="px-4 py-2">{index + 1}</td>
+                  <td className="px-4 py-2">
+                    {isLocked ? (
+                      task.description
+                    ) : (
+                      <input
+                        type="text"
+                        value={task.description}
+                        onChange={(e) => handleUpdateTask(task.id, 'description', e.target.value)}
+                        className="w-full p-1 border rounded"
+                      />
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {task.fixedPrice ? (
+                      <span className="float-right">${task.fixedPrice.toFixed(2)}</span>
+                    ) : isLocked ? (
+                      <span className="float-right">{task.hours}</span>
+                    ) : (
+                      <input
+                        type="number"
+                        value={task.hours}
+                        onChange={(e) => handleUpdateTask(task.id, 'hours', e.target.value)}
+                        className="w-full p-1 border rounded text-right"
+                        min="0"
+                        step="0.5"
+                      />
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {!isLocked && (
+            <form onSubmit={handleAddTask} className="mt-4 grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Task description"
+                value={newTask.description}
+                onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                className="p-2 border rounded"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Hours"
+                  value={newTask.hours}
+                  onChange={(e) => setNewTask({...newTask, hours: e.target.value})}
+                  className="p-2 border rounded w-full"
+                  min="0"
+                  step="0.5"
+                />
+                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Add
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Summary */}
+        {/* Summary */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="grid gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <div className="text-sm text-gray-500">Total Hours</div>
+                <div className="text-2xl font-bold">{totalHours}</div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <div className="text-sm text-gray-500">Hourly Rate</div>
+                <div className="text-2xl font-bold">${hourlyRate}</div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg text-center">
+                <div className="text-sm text-gray-500">Fixed Costs</div>
+                <div className="text-2xl font-bold">${totals.fixedCosts.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-500">TX Sales Tax (8.25%)</div>
+                <div className="text-lg font-semibold">${totals.txTax.toFixed(2)}</div>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-500">Processing Fee (2.9% + $0.30)</div>
+                <div className="text-lg font-semibold">${totals.ccFee.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 rounded-lg flex justify-between items-center">
+              <div>
+                <div className="text-sm text-blue-600">Total Price</div>
+                <div className="text-3xl font-bold text-blue-600">${totals.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div className="text-xs text-gray-500 mt-1">Including Texas sales tax and processing fees</div>
+              </div>
+              <button
+                onClick={() => document.getElementById('payment-modal').showModal()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Pay
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Modal */}
+        <dialog id="payment-modal" className="modal p-6 rounded-lg shadow-lg max-w-md w-full">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Payment</h3>
+            <div className="bg-indigo-500 p-4 rounded-lg">
+              <div className="bg-white p-4 rounded">
+                <img src="/api/placeholder/440/440" alt="Payment QR Code" className="w-full" />
+              </div>
+              <p className="text-white text-center mt-2">Scan to pay</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => document.getElementById('payment-modal').close()}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <a
+                href="https://buy.stripe.com/aEUdSYgSD7gh3W83cl"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open('https://buy.stripe.com/aEUdSYgSD7gh3W83cl', '_blank');
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Pay Online
+              </a>
+            </div>
+          </div>
+        </dialog>
+      </div>
+    </div>
+  );
+};
+
+export default BFPNBMCalculator;
